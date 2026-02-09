@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from app.core.database import Base, engine
 from app.routers.teams import router as teams_router
+from app.routers.matches import router as matches_router
+from app.routers.players import router as players_router
+
+
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -12,7 +16,7 @@ def create_app() -> FastAPI:
     # Create database tables
     Base.metadata.create_all(bind=engine)
 
-    # Health / root endpoint (professional polish)
+    # Health / root endpoint
     @app.get("/")
     def health_check():
         return {
@@ -22,6 +26,9 @@ def create_app() -> FastAPI:
 
     # Routers
     app.include_router(teams_router, prefix="/teams", tags=["Teams"])
+    app.include_router(matches_router, prefix="/matches", tags=["Matches"])
+    app.include_router(players_router, prefix="/players", tags=["Players"])
+
 
     return app
 
