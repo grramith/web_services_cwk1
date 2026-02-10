@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.models.match import Match
 from app.schemas.match import MatchCreate, MatchUpdate
 
+
+
 def create_match(db: Session, payload: MatchCreate) -> Match:
     m = Match(
         home_team_id=payload.home_team_id,
@@ -62,3 +64,10 @@ def update_match(db: Session, match: Match, payload: MatchUpdate) -> Match:
 def delete_match(db: Session, match: Match) -> None:
     db.delete(match)
     db.commit()
+
+
+
+
+def team_has_matches(db: Session, team_id: int) -> bool:
+    stmt = select(Match.id).where(or_(Match.home_team_id == team_id, Match.away_team_id == team_id)).limit(1)
+    return db.execute(stmt).first() is not None

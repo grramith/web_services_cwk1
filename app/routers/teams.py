@@ -8,6 +8,8 @@ from app.schemas.common import ApiResponse, ApiError
 from app.schemas.team import TeamCreate, TeamOut, TeamUpdate
 from app.repositories import team_repo
 
+from app.repositories import match_repo
+
 router = APIRouter()
 
 @router.post("", response_model=ApiResponse[TeamOut], status_code=status.HTTP_201_CREATED)
@@ -60,10 +62,16 @@ def update_team(team_id: int, payload: TeamUpdate, db: Session = Depends(get_db)
         db.rollback()
         raise conflict("Team name already exists")
 
+
+
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team(team_id: int, db: Session = Depends(get_db)):
     team = team_repo.get_team(db, team_id)
     if not team:
         raise not_found("Team")
+
+    if match_repo.team_has_matches(db, team_id):
+        raise conflict("Cannot delete team that has matches")
+
     team_repo.delete_team(db, team)
     return None
