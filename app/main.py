@@ -3,6 +3,12 @@ from app.core.database import Base, engine
 from app.routers.teams import router as teams_router
 from app.routers.matches import router as matches_router
 from app.routers.players import router as players_router
+from app.routers.stats import router as stats_router
+from app.routers.analytics import router as analytics_router
+import app.models  # ensures all models are imported so tables are created
+
+
+
 
 
 
@@ -28,6 +34,10 @@ def create_app() -> FastAPI:
     app.include_router(teams_router, prefix="/teams", tags=["Teams"])
     app.include_router(matches_router, prefix="/matches", tags=["Matches"])
     app.include_router(players_router, prefix="/players", tags=["Players"])
+    app.include_router(stats_router, prefix="/stats", tags=["Stats"])
+    app.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
+
+
 
 
     return app

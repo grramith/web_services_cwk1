@@ -1,2 +1,1 @@
-from app.repositories.team_repo import *
-from app.repositories.match_repo import *
+from app.repositories import team_repo, match_repo, player_repo, stats_repo
