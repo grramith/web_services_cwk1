@@ -212,6 +212,17 @@ class AIPlaylist(Base):
     created_at = Column(DateTime, default=_utcnow)
 
 
+
+
+class InvalidatedToken(Base):
+    """Blacklisted JWT tokens — used by logout to invalidate tokens before expiry."""
+    __tablename__ = "invalidated_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String(64), unique=True, nullable=False, index=True)
+    invalidated_at = Column(DateTime, default=_utcnow)
+    expires_at = Column(DateTime, nullable=False)
+
 class PlaylistFeedback(Base):
     __tablename__ = "playlist_feedback"
 
