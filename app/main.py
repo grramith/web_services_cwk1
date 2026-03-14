@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
 from app.middleware import RequestLoggingMiddleware, RateLimitMiddleware
-from app.routes import ai, analytics, auth, catalog, events, feedback, imports
+from app.routes import ai, analytics, auth, catalog, events, feedback, imports, mcp
 
 API = "/api/v1"
 
@@ -25,14 +25,13 @@ async def lifespan(_app: FastAPI):
 
 
 openapi_tags = [
-    {"name": "Auth", "description": "Register, login, and view your profile."},
-    {"name": "Ingestion", "description": "One-time imports: pass a Spotify OAuth token to pull your listening history, or trigger the Kaggle catalog download. All other endpoints read from the stored results."},
-    {"name": "Listening Events", "description": "Your imported Spotify history: browse, manually record, update, and delete listening events stored from your Spotify import."},
-    {"name": "Analytics", "description": "Computed from your Spotify history: listening fingerprint, mood breakdown, taste drift over time, and listening highlights."},
-    {"name": "AI", "description": "Powered by your Spotify fingerprint: explainable hybrid recommendations matched against the catalog, what-if scenarios, grounded insight generation, and self-critique."},
-    {"name": "Catalog", "description": "Kaggle dataset (1926 tracks): search and filter, cosine similarity search, mood quadrant map, audio feature DNA statistics, and natural language mood recommendations."},
-    {"name": "Feedback", "description": "Your ratings on catalog tracks: create, view, update, and delete likes, dislikes, saves, and skips."},
-    {"name": "System", "description": "API health check."},
+    {"name": "Auth", "description": "User registration, login, and profile access."},
+    {"name": "Ingestion", "description": "Import Spotify listening context and the public discovery catalog."},
+    {"name": "Listening Events", "description": "Record and manage your listening history."}, {"name": "Catalog", "description": "Browse and search the imported discovery catalog."}, {"name": "Feedback", "description": "Full CRUD over user feedback on catalog tracks."},
+    {"name": "Analytics", "description": "Focused hybrid analytics including overview, fingerprint, highlights, and recent change detection."},
+    {"name": "AI", "description": "Explainable hybrid recommendations, grounded insight generation, and critique."},
+    {"name": "MCP", "description": "Model Context Protocol server — exposes Sonic Insights tools for AI client integration (Claude Desktop, Cursor, etc.)."},
+    {"name": "System", "description": "Operational health endpoints."},
 ]
 
 app = FastAPI(
@@ -54,19 +53,59 @@ app.add_middleware(RateLimitMiddleware, max_requests=1000, window_seconds=60)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], allow_credentials=True,
+    allow_origins=["http://localhost:3000", "http://localhost:8000", "http://127.0.0.1:8000"], allow_credentials=True,
     allow_methods=["*"], allow_headers=["*"],
 )
 
 app.include_router(auth.router, prefix=API)
-app.include_router(imports.router, prefix=API)
 app.include_router(events.router, prefix=API)
-app.include_router(analytics.router, prefix=API)
-app.include_router(ai.router, prefix=API)
-app.include_router(catalog.router, prefix=API)
+app.include_router(imports.router, prefix=API)
 app.include_router(feedback.router, prefix=API)
+app.include_router(analytics.router, prefix=API)
+app.include_router(catalog.router, prefix=API)
+app.include_router(ai.router, prefix=API)
+app.include_router(mcp.router, prefix=API)
 
 
 @app.get("/health", tags=["System"], summary="API health check")
 def health():
     return {"status": "healthy", "version": "3.0.0"}
+
+
+@app.get("/health/detailed", tags=["System"], summary="Detailed system health with database statistics")
+def health_detailed():
+    from sqlalchemy import text
+    from app.database import SessionLocal
+    db = SessionLocal()
+    try:
+        stats = {}
+        for table, label in [
+            ("catalog_tracks", "catalog_tracks"),
+            ("tracks", "spotify_tracks"),
+            ("listening_events", "listening_events"),
+            ("users", "users"),
+            ("track_feedback", "feedback_records"),
+            ("insights", "insights"),
+        ]:
+            try:
+                stats[label] = db.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
+            except Exception:
+                stats[label] = 0
+
+        from app.models import ImportJob
+        last_import = db.query(ImportJob).order_by(
+            ImportJob.started_at.desc()).first()
+
+        return {
+            "status": "healthy",
+            "version": "3.0.0",
+            "database": "connected",
+            "statistics": stats,
+            "last_import": {
+                "source": last_import.source if last_import else None,
+                "status": last_import.status if last_import else None,
+                "started_at": last_import.started_at.isoformat() if last_import else None,
+            },
+        }
+    finally:
+        db.close()
