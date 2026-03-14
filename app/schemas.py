@@ -39,7 +39,7 @@ class ImportStartRequest(BaseModel):
 
 class CatalogImportRequest(BaseModel):
     dataset_slug: str = "ramithgajjala/ramith-top-songs"
-    file_path: str = ""
+    file_path: str = "ramith-top-songs.csv"
 
 
 class ImportJobRead(BaseModel):
