@@ -452,3 +452,72 @@ class EvalResult(BaseModel):
     overall_score: float
     checks: List[EvalCheck]
     verdict: str
+
+
+# ── Catalog Mood Map ─────────────────────────────────────────────────────────
+class MoodQuadrantStat(BaseModel):
+    mood: str
+    count: int
+    percentage: float
+    avg_energy: float
+    avg_valence: float
+    avg_danceability: float
+    example_tracks: List[str]
+
+
+class CatalogMoodMapResult(BaseModel):
+    total_tracks: int
+    quadrants: List[MoodQuadrantStat]
+    most_common_mood: str
+    description: str
+
+
+# ── Catalog Audio DNA ────────────────────────────────────────────────────────
+class AudioDNAFeature(BaseModel):
+    feature: str
+    mean: float
+    percentile_25: float
+    percentile_75: float
+    min_value: float
+    max_value: float
+    description: str
+
+
+class CatalogAudioDNAResult(BaseModel):
+    total_tracks: int
+    features: List[AudioDNAFeature]
+    genre_fingerprints: Dict[str, Dict[str, float]]
+    insight: str
+
+
+# ── Catalog Mood Recommendation ──────────────────────────────────────────────
+class MoodRecommendRequest(BaseModel):
+    description: str = Field(
+        ..., min_length=3, max_length=300,
+        description="Natural language mood e.g. 'rainy sunday afternoon'"
+    )
+    limit: int = Field(10, ge=1, le=50)
+    genre: Optional[str] = None
+
+
+class MoodRecommendItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    artist: str
+    genre: Optional[str] = None
+    energy: Optional[float] = None
+    valence: Optional[float] = None
+    danceability: Optional[float] = None
+    tempo: Optional[float] = None
+    mood_match_score: float
+    matched_keywords: List[str]
+    mood_label: str
+
+
+class MoodRecommendResult(BaseModel):
+    description: str
+    interpreted_targets: Dict[str, Any]
+    matched_keywords: List[str]
+    total_candidates: int
+    results: List[MoodRecommendItem]
