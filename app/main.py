@@ -26,10 +26,12 @@ async def lifespan(_app: FastAPI):
 
 openapi_tags = [
     {"name": "Auth", "description": "User registration, login, and profile access."},
-    {"name": "Ingestion", "description": "Import Spotify listening context and the public discovery catalog."},
-    {"name": "Listening Events", "description": "Record and manage your listening history."}, {"name": "Catalog", "description": "Browse and search the imported discovery catalog."}, {"name": "Feedback", "description": "Full CRUD over user feedback on catalog tracks."},
-    {"name": "Analytics", "description": "Focused hybrid analytics including overview, fingerprint, highlights, and recent change detection."},
-    {"name": "AI", "description": "Explainable hybrid recommendations, grounded insight generation, and critique."},
+    {"name": "Ingestion", "description": "Import your Spotify listening history and the public discovery catalog."},
+    {"name": "Listening Events", "description": "Record and manage your personal listening history."},
+    {"name": "Analytics", "description": "Listening fingerprint, mood analysis, taste drift, and highlights."},
+    {"name": "AI", "description": "Explainable hybrid recommendations, insight generation, and critique."},
+    {"name": "Catalog", "description": "Browse, search, and analyse the imported discovery catalog."},
+    {"name": "Feedback", "description": "Full CRUD over user feedback on catalog tracks."},
     {"name": "System", "description": "Operational health endpoints."},
 ]
 
@@ -57,12 +59,12 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix=API)
-app.include_router(events.router, prefix=API)
 app.include_router(imports.router, prefix=API)
-app.include_router(feedback.router, prefix=API)
+app.include_router(events.router, prefix=API)
 app.include_router(analytics.router, prefix=API)
-app.include_router(catalog.router, prefix=API)
 app.include_router(ai.router, prefix=API)
+app.include_router(catalog.router, prefix=API)
+app.include_router(feedback.router, prefix=API)
 
 
 @app.get("/health", tags=["System"], summary="API health check")
