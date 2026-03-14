@@ -303,6 +303,52 @@ def get_audio_dna(
     )
 
 
+@router.get("/genres", summary="Genre breakdown of the imported catalog", tags=["Catalog"])
+def get_genre_breakdown(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from collections import defaultdict
+    import statistics
+    from app.models import CatalogTrack
+    from app.schemas import GenreBreakdownResult, GenreStat
+
+    tracks = db.query(CatalogTrack).filter(CatalogTrack.genre.isnot(None)).all()
+
+    buckets: dict = defaultdict(lambda: {"energy": [], "valence": [], "danceability": [], "tempo": []})
+    for t in tracks:
+        g = t.genre.strip().lower()
+        if t.energy is not None:
+            buckets[g]["energy"].append(t.energy)
+        if t.valence is not None:
+            buckets[g]["valence"].append(t.valence)
+        if t.danceability is not None:
+            buckets[g]["danceability"].append(t.danceability)
+        if t.tempo is not None:
+            buckets[g]["tempo"].append(t.tempo)
+
+    def safe_mean(vals):
+        return round(statistics.mean(vals), 4) if vals else None
+
+    genres = sorted(
+        [
+            GenreStat(
+                genre=genre,
+                track_count=len(data["energy"]) or len(data["valence"]) or 1,
+                avg_energy=safe_mean(data["energy"]),
+                avg_valence=safe_mean(data["valence"]),
+                avg_danceability=safe_mean(data["danceability"]),
+                avg_tempo=safe_mean(data["tempo"]),
+            )
+            for genre, data in buckets.items()
+        ],
+        key=lambda x: -x.track_count,
+    )
+
+    return GenreBreakdownResult(total_genres=len(genres), genres=genres)
+
+
+
 @router.post("/recommend-by-mood", response_model=MoodRecommendResult,
              summary="Natural language mood → ranked catalog recommendations",
              description=(
