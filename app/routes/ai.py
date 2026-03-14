@@ -50,14 +50,6 @@ def recommendations_what_if(
     return hybrid_svc.what_if_recommendations(db, user.id, body.scenario, body.max_tracks)
 
 
-@router.post(
-    "/insights",
-    response_model=InsightRead,
-    status_code=201,
-    summary="Generate a grounded hybrid insight",
-)
-def create_insight(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return hybrid_svc.generate_hybrid_insight(db, user.id)
 
 
 @router.post(
@@ -69,19 +61,3 @@ def critique_insight(insight_id: int, user: User = Depends(get_current_user), db
     return hybrid_svc.critique_insight(db, user.id, insight_id)
 
 
-@router.get(
-    "/insights",
-    response_model=list[InsightRead],
-    summary="List your saved insights",
-)
-def list_insights(
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    from app.models import Insight
-    return (
-        db.query(Insight)
-        .filter(Insight.user_id == user.id)
-        .order_by(Insight.created_at.desc())
-        .all()
-    )
