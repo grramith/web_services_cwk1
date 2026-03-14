@@ -25,14 +25,14 @@ async def lifespan(_app: FastAPI):
 
 
 openapi_tags = [
-    {"name": "Auth", "description": "User registration, login, and profile access."},
-    {"name": "Ingestion", "description": "Import your Spotify listening history and the public discovery catalog."},
-    {"name": "Listening Events", "description": "Record and manage your personal listening history."},
-    {"name": "Analytics", "description": "Listening fingerprint, mood analysis, taste drift, and highlights."},
-    {"name": "AI", "description": "Explainable hybrid recommendations, insight generation, and critique."},
-    {"name": "Catalog", "description": "Browse, search, and analyse the imported discovery catalog."},
-    {"name": "Feedback", "description": "Full CRUD over user feedback on catalog tracks."},
-    {"name": "System", "description": "Operational health endpoints."},
+    {"name": "Auth", "description": "Register, login, and view your profile."},
+    {"name": "Ingestion", "description": "One-time imports: pass a Spotify OAuth token to pull your listening history, or trigger the Kaggle catalog download. All other endpoints read from the stored results."},
+    {"name": "Listening Events", "description": "Your imported Spotify history: browse, manually record, update, and delete listening events stored from your Spotify import."},
+    {"name": "Analytics", "description": "Computed from your Spotify history: listening fingerprint, mood breakdown, taste drift over time, and listening highlights."},
+    {"name": "AI", "description": "Powered by your Spotify fingerprint: explainable hybrid recommendations matched against the catalog, what-if scenarios, grounded insight generation, and self-critique."},
+    {"name": "Catalog", "description": "Kaggle dataset (1926 tracks): search and filter, cosine similarity search, mood quadrant map, audio feature DNA statistics, and natural language mood recommendations."},
+    {"name": "Feedback", "description": "Your ratings on catalog tracks: create, view, update, and delete likes, dislikes, saves, and skips."},
+    {"name": "System", "description": "API health check."},
 ]
 
 app = FastAPI(
