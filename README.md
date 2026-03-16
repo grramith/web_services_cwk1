@@ -344,3 +344,13 @@ project/
 - **Synchronous Spotify import** — the `/imports/spotify` endpoint runs synchronously. A production implementation would use a background task queue (Celery, ARQ).
 - **Kaggle credentials** — `POST /imports/catalog` requires a `~/.kaggle/kaggle.json` credentials file on the server. Without it the endpoint returns `500`.
 - **LLM enrichment is optional** — if `OPENAI_API_KEY` is not set, all analytics and AI endpoints return deterministic template-based output. No endpoint fails without the key.
+- **Spotify import track limit** — the Spotify Web API caps top tracks at 50 per time range
+  (short, medium, long term) and recently played at 50 items, giving a maximum of approximately
+  150 tracks per import. In practice this is often lower. Several analytics endpoints
+  (`/analytics/fingerprint`, `/analytics/changes/recent`, `/analytics/highlights`) require
+  a minimum volume of listening events to produce meaningful results — with fewer than ~30
+  events the fingerprint metrics are statistically unreliable. The recommended workaround is
+  to run `POST /imports/spotify` with `"synthesise_history": true`, which generates plausible
+  historical listening events from top-track affinity data to supplement the real import.
+  A production solution would use the Spotify extended history export (available via the
+  Spotify Privacy page) which provides up to one year of full playback data.
