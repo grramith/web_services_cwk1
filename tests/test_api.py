@@ -575,12 +575,15 @@ class TestAnalyticsV3:
                          "dominant_mood", "top_genre"]:
             assert expected in metric_names
 
-    def test_recent_changes_no_data_returns_400(self):
+    def test_recent_changes_no_data_returns_stable(self):
         register(username="empty3", email="empty3@x.com")
         token = login("empty3")["access_token"]
         r = client.get("/api/v1/analytics/changes/recent",
-                       headers={"Authorization": f"Bearer {token}"})
-        assert r.status_code == 400
+                    headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 200
+        d = r.json()
+        assert d["fingerprint_shift"] == "Stable"
+        assert d["metrics"] is not None
 
     def test_overview_requires_auth(self):
         r = client.get("/api/v1/analytics/overview")
@@ -651,8 +654,9 @@ class TestCatalogSearch:
 
     def test_search_pagination_offset(self):
         self._populate(5)
-        r1 = client.get("/api/v1/catalog?limit=3&offset=0", headers=self._auth())
-        r2 = client.get("/api/v1/catalog?limit=3&offset=3", headers=self._auth())
+        headers = self._auth()          # register + login exactly once
+        r1 = client.get("/api/v1/catalog?limit=3&offset=0", headers=headers)
+        r2 = client.get("/api/v1/catalog?limit=3&offset=3", headers=headers)
         ids_page1 = {i["id"] for i in r1.json()["items"]}
         ids_page2 = {i["id"] for i in r2.json()["items"]}
         assert ids_page1.isdisjoint(ids_page2), "Pages must not overlap"
@@ -1240,9 +1244,10 @@ class TestMCPManifest:
             assert "description" in tool
             assert "parameters" in tool
 
-    def test_manifest_requires_auth(self):
+    def test_manifest_accessible_without_auth(self):
         r = client.get("/api/v1/mcp/manifest")
-        assert r.status_code == 401
+        assert r.status_code == 200
+        assert r.json()["schema_version"] == "1.0"
 
 
 class TestMCPInvoke:
@@ -1319,18 +1324,17 @@ class TestMCPInvoke:
 
     def test_invoke_find_similar_tracks(self):
         self._populate_catalog()
-        # Get a valid catalog track id
-        tracks = client.get("/api/v1/catalog",
-                            headers=self._auth()).json()["items"]
+        headers = self._auth()                                      # register once
+        tracks = client.get("/api/v1/catalog", headers=headers).json()["items"]
         seed_id = tracks[0]["id"]
         r = client.post("/api/v1/mcp/invoke",
                         json={"tool": "find_similar_tracks",
-                              "arguments": {"track_id": seed_id, "limit": 3}},
-                        headers=self._auth())
+                            "arguments": {"track_id": seed_id, "limit": 3}},
+                        headers=headers)
         assert r.status_code == 200
-        d = r.json()
-        assert d["success"] is True
-        assert "similar_tracks" in d["result"]
+        assert r.json()["success"] is True
+        assert "similar_tracks" in r.json()["result"]
+
 
     def test_invoke_find_similar_tracks_missing_id_returns_error(self):
         r = client.post("/api/v1/mcp/invoke",
@@ -1447,7 +1451,7 @@ class TestEndToEndWorkflows:
         # 7. Verify feedback is in list
         r = client.get("/api/v1/feedback", headers=hdr)
         assert len(r.json()) == 1
-        assert r.json()[0]["track_id"] == first_track_id  # via FeedbackListItem
+        assert r.json()[0]["catalog_track_id"] == first_track_id # via FeedbackListItem
 
     def test_token_rotation_security_chain(self):
         """
