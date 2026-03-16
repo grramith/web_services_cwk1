@@ -14,4 +14,4 @@ requests
 pandas
 kagglehub[pandas-datasets]
 sse-starlette
- 
+tenacity
