@@ -4,6 +4,16 @@
 
 A hybrid music-intelligence REST API that combines real Spotify listening behaviour with a public Kaggle discovery catalog to deliver explainable recommendations, a persisted listening fingerprint, and a fully compliant Model Context Protocol (MCP) server.
 
+**API Documentation:** [api_documentation.pdf](api_documentation.pdf)
+
+| Resource | URL |
+|---|---|
+| Live API | https://web-production-f9a4.up.railway.app/ |
+| Swagger UI | https://web-production-f9a4.up.railway.app/docs |
+| ReDoc | https://web-production-f9a4.up.railway.app/redoc |
+| Health Dashboard | https://web-production-f9a4.up.railway.app/health/detailed |
+| GitHub | https://github.com/grramith/web_services_cwk1 |
+
 ---
 
 ## Table of Contents
@@ -48,7 +58,7 @@ The system then computes a **listening fingerprint** (a persisted psychoacoustic
 ├─────────────────────────────────────────────────────────┤
 │              SQLAlchemy ORM + SQLite / PostgreSQL        │
 ├─────────────────────────────────────────────────────────┤
-│   Spotify Web API      │   Kaggle Dataset   │  OpenAI   │
+│   Spotify Web API      │   Kaggle Dataset   │   Groq    │
 └────────────────────────┴────────────────────┴───────────┘
 ```
 
@@ -88,8 +98,8 @@ Key design decisions:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/sonic-insights.git
-cd sonic-insights/project
+git clone https://github.com/grramith/web_services_cwk1.git
+cd web_services_cwk1
 
 # 2. Create and activate a virtual environment
 python -m venv venv
@@ -247,13 +257,13 @@ Available tools: `search_catalog`, `recommend_by_mood`, `get_listening_summary`,
 pytest tests/ -v --cov=app --cov-report=term-missing
 
 # Run only the v3 test file
-pytest tests/test_api_v3_missing.py -v
+pytest tests/test_api.py -v
 
 # Stop on first failure
 pytest tests/ -v -x
 
 # Run a single test class
-pytest tests/test_api_v3_missing.py::TestFeedbackCRUD -v
+pytest tests/test_api.py::TestFeedbackCRUD -v
 ```
 
 ### Test architecture
@@ -262,7 +272,7 @@ pytest tests/test_api_v3_missing.py::TestFeedbackCRUD -v
 - **LLM mocking** — `tests/conftest.py` patches `_llm_chat` with an `AsyncMock` returning `None` so no real OpenAI calls are made and tests are fully hermetic
 - **Two test files**:
   - `tests/test_api.py` — original suite covering auth, events CRUD, and core analytics
-  - `tests/test_api_v3_missing.py` — full v3 coverage: feedback CRUD, catalog, AI hybrid, MCP, end-to-end workflows (118 tests)
+  - `tests/test_api.py` — full test suite: auth, feedback CRUD, analytics, catalog, AI hybrid, MCP, end-to-end workflows (121 tests)
 
 ### Coverage summary
 
@@ -329,13 +339,26 @@ project/
 ├── tests/
 │   ├── conftest.py          # Shared fixtures (LLM mock)
 │   ├── test_api.py          # Original test suite
-│   └── test_api_v3_missing.py # Full v3 coverage (118 tests)
+│   └── test_api_v3_missing.py # Full v3 coverage (121 tests)
 ├── data/
 │   └── seed_features.py     # Development data seeder
 ├── requirements.txt
 ├── pytest.ini
 └── README.md
 ```
+
+---
+
+## Deployment
+
+The API is deployed on Railway at https://web-production-f9a4.up.railway.app
+
+To deploy your own instance:
+
+1. Create a Railway account at railway.app
+2. Connect your GitHub repository
+3. Set environment variables: `SECRET_KEY`, `DATABASE_URL`, `OPENAI_API_KEY`
+4. Set start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
 ---
 
