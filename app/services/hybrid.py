@@ -32,7 +32,7 @@ from app.schemas import (
 logger = logging.getLogger(__name__)
 
 
-def _llm_chat(prompt: str, *, max_tokens: int = 250, temperature: float = 0.2) -> Optional[str]:
+def _llm_chat(prompt: str, *, max_tokens: int = 400, temperature: float = 0.2) -> Optional[str]:
     if not settings.OPENAI_API_KEY:
         return None
     try:
@@ -422,7 +422,7 @@ async def explain_recommendations(db: Session, user_id: int, context: Optional[s
 
     summary = f"Generated {len(items)} hybrid recommendations by matching your Spotify-derived fingerprint against the external catalog."
     llm = _llm_chat(
-        "Write a concise 2-sentence explanation of this hybrid recommendation set. Use only the structured data below:\n"
+        "You are a music intelligence assistant. Write 3 sentences explaining these recommendations to the user. Reference their specific fingerprint label, mention 2 of the recommended artists by name, and explain why the audio features match their taste. Be conversational and specific. Use only this data:\n"
         + json.dumps({
             "fingerprint_label": fp.label,
             "context": context,
@@ -528,7 +528,7 @@ async def critique_insight(db: Session, user_id: int, insight_id: int) -> Insigh
         f"Recent change analysis indicates: {snapshot.get('recent_shift', 'stable listening behaviour')}."
     )
     llm = _llm_chat(
-        "Rewrite this insight excerpt to be more grounded and precise, using only the provided snapshot:\n"
+        "Rewrite this music insight to be more specific and data-driven. Replace any vague words with concrete numbers from the snapshot. Reference the fingerprint label, energy value, and novelty ratio explicitly. Keep it to 3 sentences. Use only this data:\n"
         + json.dumps({"text": text, "snapshot": snapshot})
     )
     if llm:
