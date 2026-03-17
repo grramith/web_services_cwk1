@@ -32,7 +32,7 @@ from app.schemas import (
 logger = logging.getLogger(__name__)
 
 
-def _llm_chat(prompt: str, *, max_tokens: int = 400, temperature: float = 0.2) -> Optional[str]:
+async def _llm_chat(prompt: str, *, max_tokens: int = 400, temperature: float = 0.2) -> Optional[str]:
     if not settings.OPENAI_API_KEY:
         return None
     try:
@@ -212,9 +212,10 @@ async def fingerprint_result(db: Session, user_id: int) -> FingerprintResult:
         f"Your fingerprint is {fp.label}: average energy {fp.avg_energy}, valence {fp.avg_valence}, "
         f"novelty ratio {fp.novelty_ratio}, and diversity score {fp.diversity_score}."
     )
-    llm = _llm_chat(
-        "Rewrite this listening-fingerprint explanation in 2 concise sentences, grounded in the data only:\n"
-        + json.dumps({"label": fp.label, "traits": traits.model_dump(), "evidence": evidence})
+    llm = await _llm_chat(
+            "Rewrite this listening-fingerprint explanation in 2 concise sentences, grounded in the data only:\n"
+            + json.dumps({"label": fp.label, "traits": traits.model_dump(), "evidence": evidence}),
+            max_tokens=300, temperature=0.2,
     )
     if llm:
         explanation = llm
@@ -326,9 +327,10 @@ async def recent_changes(db: Session, user_id: int, days: int = 30) -> RecentCha
         f"Compared with the previous {days}-day window, your recent listening is {shift.lower()}. "
         f"Top genre shifted from {prev['top_genre'] or 'n/a'} to {recent['top_genre'] or 'n/a'} and top artist moved from {prev['top_artist'] or 'n/a'} to {recent['top_artist'] or 'n/a'}."
     )
-    llm = _llm_chat(
-        "Write a concise 2-sentence recent taste change summary grounded only in these metrics:\n"
-        + json.dumps({"previous": prev, "recent": recent, "metrics": [m.model_dump() for m in metrics]})
+    llm = await _llm_chat(
+            "Write a concise 2-sentence recent taste change summary grounded only in these metrics:\n"
+            + json.dumps({"previous": prev, "recent": recent, "metrics": [m.model_dump() for m in metrics]}),
+            max_tokens=300, temperature=0.2,
     )
     if llm:
         summary = llm
@@ -421,14 +423,15 @@ async def explain_recommendations(db: Session, user_id: int, context: Optional[s
         )
 
     summary = f"Generated {len(items)} hybrid recommendations by matching your Spotify-derived fingerprint against the external catalog."
-    llm = _llm_chat(
-        "You are a music intelligence assistant. Write 3 sentences explaining these recommendations to the user. Reference their specific fingerprint label, mention 2 of the recommended artists by name, and explain why the audio features match their taste. Be conversational and specific. Use only this data:\n"
-        + json.dumps({
-            "fingerprint_label": fp.label,
-            "context": context,
-            "strategy": strategy,
-            "recommendations": [i.model_dump() for i in items],
-        })
+    llm = await _llm_chat(
+            "You are a music intelligence assistant. Write 3 sentences explaining these recommendations to the user. Reference their specific fingerprint label, mention 2 of the recommended artists by name, and explain why the audio features match their taste. Be conversational and specific. Use only this data:\n"
+            + json.dumps({
+                "fingerprint_label": fp.label,
+                "context": context,
+                "strategy": strategy,
+                "recommendations": [i.model_dump() for i in items],
+            }),
+            max_tokens=400, temperature=0.4,
     )
     if llm:
         summary = llm
@@ -473,7 +476,7 @@ async def generate_hybrid_insight(db: Session, user_id: int) -> Insight:
         f"Your listening fingerprint is {fp.label}, characterised by average energy {fp.avg_energy}, valence {fp.avg_valence}, "
         f"and a novelty ratio of {fp.novelty_ratio}. Recently, your behaviour has shifted as follows: {changes.summary}"
     )
-    llm = _llm_chat(
+    llm =await _llm_chat(
         "Write a 4-sentence grounded hybrid music insight using only this data:\n"
         + json.dumps({"snapshot": snapshot, "evidence": evidence})
     )
@@ -527,9 +530,10 @@ async def critique_insight(db: Session, user_id: int, insight_id: int) -> Insigh
         f"Your profile is {snapshot.get('fingerprint_label', 'Balanced Listener')}, with average energy {snapshot.get('avg_energy')} and novelty ratio {snapshot.get('novelty_ratio')}. "
         f"Recent change analysis indicates: {snapshot.get('recent_shift', 'stable listening behaviour')}."
     )
-    llm = _llm_chat(
-        "Rewrite this music insight to be more specific and data-driven. Replace any vague words with concrete numbers from the snapshot. Reference the fingerprint label, energy value, and novelty ratio explicitly. Keep it to 3 sentences. Use only this data:\n"
-        + json.dumps({"text": text, "snapshot": snapshot})
+    llm = await _llm_chat(
+            "Rewrite this music insight to be more specific and data-driven. Replace any vague words with concrete numbers from the snapshot. Reference the fingerprint label, energy value, and novelty ratio explicitly. Keep it to 3 sentences. Use only this data:\n"
+            + json.dumps({"text": text, "snapshot": snapshot}),
+            max_tokens=300, temperature=0.1,
     )
     if llm:
         improved_excerpt = llm
