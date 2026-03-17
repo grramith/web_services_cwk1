@@ -192,7 +192,7 @@ def _fingerprint_evidence(fp: UserFingerprint) -> list[dict[str, Any]]:
     return evidence
 
 
-def fingerprint_result(db: Session, user_id: int) -> FingerprintResult:
+async def fingerprint_result(db: Session, user_id: int) -> FingerprintResult:
     fp = build_fingerprint(db, user_id)
     traits = FingerprintTraits(
         avg_energy=fp.avg_energy,
@@ -226,7 +226,7 @@ def fingerprint_result(db: Session, user_id: int) -> FingerprintResult:
     )
 
 
-def overview(db: Session, user_id: int) -> OverviewResult:
+async def overview(db: Session, user_id: int) -> OverviewResult:
     fp = build_fingerprint(db, user_id)
     unique_spotify_tracks = db.query(Track.id).join(ListeningEvent, ListeningEvent.track_id == Track.id).filter(ListeningEvent.user_id == user_id).distinct().count()
     unique_catalog_feedback_tracks = db.query(TrackFeedback.catalog_track_id).filter(TrackFeedback.user_id == user_id).distinct().count()
@@ -242,7 +242,7 @@ def overview(db: Session, user_id: int) -> OverviewResult:
     )
 
 
-def highlights(db: Session, user_id: int) -> HighlightResult:
+async def highlights(db: Session, user_id: int) -> HighlightResult:
     fp = build_fingerprint(db, user_id)
     return HighlightResult(
         top_artist=(fp.top_artists_json or [None])[0],
@@ -254,7 +254,7 @@ def highlights(db: Session, user_id: int) -> HighlightResult:
     )
 
 
-def recent_changes(db: Session, user_id: int, days: int = 30) -> RecentChangesResult:
+async def recent_changes(db: Session, user_id: int, days: int = 30) -> RecentChangesResult:
     now = datetime.now(timezone.utc)
     recent_start = now - timedelta(days=days)
     previous_start = recent_start - timedelta(days=days)
@@ -379,7 +379,7 @@ def _build_reason(track: CatalogTrack, fp: UserFingerprint, context: Optional[st
     return base
 
 
-def explain_recommendations(db: Session, user_id: int, context: Optional[str], strategy: str, max_tracks: int) -> RecommendationExplainResult:
+async def explain_recommendations(db: Session, user_id: int, context: Optional[str], strategy: str, max_tracks: int) -> RecommendationExplainResult:
     fp = build_fingerprint(db, user_id)
     candidates = _candidate_tracks(db)
     if not candidates:
@@ -441,7 +441,7 @@ def explain_recommendations(db: Session, user_id: int, context: Optional[str], s
     )
 
 
-def what_if_recommendations(db: Session, user_id: int, scenario: str, max_tracks: int) -> RecommendationExplainResult:
+async def what_if_recommendations(db: Session, user_id: int, scenario: str, max_tracks: int) -> RecommendationExplainResult:
     scenario_lower = scenario.lower()
     strategy = "balanced"
     context = scenario
@@ -449,12 +449,12 @@ def what_if_recommendations(db: Session, user_id: int, scenario: str, max_tracks
         strategy = "discovery"
     elif "comfort" in scenario_lower or "familiar" in scenario_lower or "closer to what i like" in scenario_lower:
         strategy = "comfort"
-    return explain_recommendations(db, user_id, context=context, strategy=strategy, max_tracks=max_tracks)
+    return await explain_recommendations(db, user_id, context=context, strategy=strategy, max_tracks=max_tracks)
 
 
-def generate_hybrid_insight(db: Session, user_id: int) -> Insight:
+async def generate_hybrid_insight(db: Session, user_id: int) -> Insight:
     fp = build_fingerprint(db, user_id)
-    changes = recent_changes(db, user_id)
+    changes = await recent_changes(db, user_id)
     snapshot = {
         "fingerprint_label": fp.label,
         "avg_energy": fp.avg_energy,
@@ -496,7 +496,7 @@ def generate_hybrid_insight(db: Session, user_id: int) -> Insight:
     return record
 
 
-def critique_insight(db: Session, user_id: int, insight_id: int) -> InsightCritiqueResult:
+async def critique_insight(db: Session, user_id: int, insight_id: int) -> InsightCritiqueResult:
     insight = db.query(Insight).filter(Insight.id == insight_id, Insight.user_id == user_id).first()
     if not insight:
         raise HTTPException(status_code=404, detail="Insight not found")
