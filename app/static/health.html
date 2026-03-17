@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sonic Insights — System Health</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f0f;
+    color: #e8e8e8;
+    min-height: 100vh;
+    padding: 3rem 1rem;
+  }
+  .container { max-width: 700px; margin: 0 auto; }
+  .back { font-size: 13px; color: #555; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 2rem; }
+  .back:hover { color: #888; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 3px 12px;
+    border-radius: 20px;
+    background: #1a2e1a;
+    color: #4ade80;
+    border: 1px solid #2d4d2d;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+  }
+  .badge-error {
+    background: #2d0d0d;
+    color: #f87171;
+    border-color: #4d1d1d;
+  }
+  h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; color: #fff; }
+  .updated { font-size: 12px; color: #444; margin-bottom: 2rem; }
+  .label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 2.5rem;
+  }
+  .stat {
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .stat-num { font-size: 24px; font-weight: 600; color: #fff; }
+  .stat-lbl { font-size: 11px; color: #555; margin-top: 4px; }
+  .info-card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #242424;
+    font-size: 14px;
+  }
+  .row:last-child { border-bottom: none; }
+  .row-label { color: #666; }
+  .row-value { color: #e8e8e8; font-weight: 500; }
+  .row-value.green { color: #4ade80; }
+  .row-value.red { color: #f87171; }
+  .row-value.mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #ccc; }
+  .loading { text-align: center; padding: 3rem; color: #444; font-size: 14px; }
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid #2a2a2a;
+    border-top-color: #4ade80;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-card {
+    background: #1a0d0d;
+    border: 1px solid #4d1d1d;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    color: #f87171;
+    font-size: 14px;
+  }
+  .footer {
+    font-size: 12px;
+    color: #444;
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #1a1a1a;
+    margin-top: 1rem;
+  }
+  .footer a { color: #555; text-decoration: none; }
+  .footer a:hover { color: #888; }
+  .refresh-btn {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #888;
+    font-size: 13px;
+    padding: 6px 14px;
+    cursor: pointer;
+    float: right;
+    margin-top: -2px;
+  }
+  .refresh-btn:hover { border-color: #444; color: #ccc; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <a class="back" href="/">&#8592; Back to home</a>
+
+  <div id="badge" class="badge">checking status...</div>
+  <h1>System Health</h1>
+  <p class="updated" id="updated">fetching data...</p>
+
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      Loading health data...
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="/">Home</a> &nbsp;&middot;&nbsp;
+    <a href="/docs">Docs</a> &nbsp;&middot;&nbsp;
+    <a href="https://github.com/grramith/web_services_cwk1">GitHub</a>
+    &nbsp;&middot;&nbsp; Sonic Insights v3.0.0
+  </div>
+
+</div>
+
+<script>
+async function load() {
+  try {
+    const res = await fetch('/health/detailed/json');
+    const d = await res.json();
+
+    document.getElementById('badge').textContent = d.status === 'healthy' ? 'healthy' : 'degraded';
+    if (d.status !== 'healthy') document.getElementById('badge').classList.add('badge-error');
+    document.getElementById('updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+
+    const s = d.statistics || {};
+    const imp = d.last_import || {};
+
+    document.getElementById('content').innerHTML = `
+      <p class="label">Database statistics <button class="refresh-btn" onclick="load()">&#8635; Refresh</button></p>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-num">${s.users ?? 0}</div><div class="stat-lbl">users</div></div>
+        <div class="stat"><div class="stat-num">${s.catalog_tracks ?? 0}</div><div class="stat-lbl">catalog tracks</div></div>
+        <div class="stat"><div class="stat-num">${s.listening_events ?? 0}</div><div class="stat-lbl">listening events</div></div>
+        <div class="stat"><div class="stat-num">${s.spotify_tracks ?? 0}</div><div class="stat-lbl">spotify tracks</div></div>
+        <div class="stat"><div class="stat-num">${s.feedback_records ?? 0}</div><div class="stat-lbl">feedback records</div></div>
+        <div class="stat"><div class="stat-num">${s.insights ?? 0}</div><div class="stat-lbl">insights</div></div>
+      </div>
+
+      <p class="label">System status</p>
+      <div class="info-card">
+        <div class="row"><span class="row-label">API status</span><span class="row-value green">${d.status}</span></div>
+        <div class="row"><span class="row-label">Version</span><span class="row-value">${d.version}</span></div>
+        <div class="row"><span class="row-label">Database</span><span class="row-value green">${d.database}</span></div>
+      </div>
+
+      <p class="label">Last import</p>
+      <div class="info-card">
+        <div class="row"><span class="row-label">Source</span><span class="row-value">${imp.source ?? 'none'}</span></div>
+        <div class="row"><span class="row-label">Status</span><span class="row-value ${imp.status === 'completed' ? 'green' : imp.status ? 'red' : ''}">${imp.status ?? 'no imports yet'}</span></div>
+        <div class="row"><span class="row-label">Started at</span><span class="row-value mono">${imp.started_at ? new Date(imp.started_at).toLocaleString() : '—'}</span></div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('badge').textContent = 'error';
+    document.getElementById('badge').classList.add('badge-error');
+    document.getElementById('updated').textContent = 'Failed to fetch health data';
+    document.getElementById('content').innerHTML = `
+      <div class="error-card">
+        Could not connect to the API.<br>
+        <small style="color:#666;margin-top:8px;display:block">${e.message}</small>
+      </div>`;
+  }
+}
+load();
+</script>
+</body>
+</html>

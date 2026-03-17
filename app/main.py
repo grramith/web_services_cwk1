@@ -77,8 +77,8 @@ def health():
     return {"status": "healthy", "version": "3.0.0"}
 
 
-@app.get("/health/detailed", tags=["System"], summary="Detailed system health with database statistics")
-def health_detailed():
+@app.get("/health/detailed/json", include_in_schema=False)
+def health_detailed_json():
     from sqlalchemy import text
     from app.database import SessionLocal
     db = SessionLocal()
@@ -114,6 +114,13 @@ def health_detailed():
         }
     finally:
         db.close()
+
+
+@app.get("/health/detailed", tags=["System"], summary="Detailed system health with database statistics")
+def health_detailed():
+    html_path = os.path.join(os.path.dirname(__file__), "static", "health.html")
+    with open(html_path, "r") as f:
+        return HTMLResponse(f.read())
 
 
 @app.get("/", include_in_schema=False)
