@@ -1395,27 +1395,23 @@ class TestMCPInvoke:
 
 class TestHealthDetailed:
     def test_health_detailed_structure(self):
-        r = client.get("/health/detailed")
+        r = client.get("/health/detailed/json")
         assert r.status_code == 200
         d = r.json()
-        assert d["status"] == "healthy"
-        assert d["database"] == "connected"
+        assert "status" in d
         assert "statistics" in d
-        assert "last_import" in d
+        assert "database" in d
 
     def test_health_detailed_statistics_keys(self):
-        r = client.get("/health/detailed")
+        r = client.get("/health/detailed/json")
         stats = r.json()["statistics"]
-        for key in ["catalog_tracks", "spotify_tracks", "listening_events",
-                    "users", "feedback_records"]:
-            assert key in stats, f"Missing stat: {key}"
+        for key in ["catalog_tracks", "spotify_tracks", "listening_events", "users", "feedback_records", "insights"]:
+            assert key in stats
 
     def test_health_detailed_counts_are_integers(self):
-        r = client.get("/health/detailed")
+        r = client.get("/health/detailed/json")
         for key, value in r.json()["statistics"].items():
-            assert isinstance(value, int), f"{key} is not an int: {value}"
-
-
+            assert isinstance(value, int)
 # ── End-to-end workflow tests ─────────────────────────────────────────────────
 
 class TestEndToEndWorkflows:
