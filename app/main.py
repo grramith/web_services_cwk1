@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.middleware import RequestLoggingMiddleware, RateLimitMiddleware
 from app.routes import ai, analytics, auth, catalog, events, feedback, imports, mcp
+from sqlalchemy import text
+from app.database import SessionLocal
 
 API = "/api/v1"
 
@@ -109,3 +111,14 @@ def health_detailed():
         }
     finally:
         db.close()
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return {
+        "name": "Sonic Insights Hybrid API",
+        "version": "3.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "github": "https://github.com/grramith/web_services_cwk1"
+    }
