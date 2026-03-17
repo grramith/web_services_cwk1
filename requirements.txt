@@ -4,8 +4,8 @@ sqlalchemy
 pydantic[email]
 pydantic-settings
 python-jose[cryptography]
-passlib[bcrypt]
-bcrypt==4.0.1
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1,<5
 pytest
 pytest-cov
 httpx

@@ -1210,6 +1210,32 @@ class TestAIInsightCritique:
         r = client.post("/api/v1/ai/insights/1/critique")
         assert r.status_code == 401
 
+    def test_generate_insight_creates_record(self):
+        """POST /ai/insights should create and return an insight record."""
+        register(username="gen_insight", email="gi@x.com")
+        token = login("gen_insight")["access_token"]
+        seed_listening_history(token, n_tracks=3, events_per_track=3)
+        r = client.post("/api/v1/ai/insights",
+                        headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 201
+        d = r.json()
+        assert "id" in d
+        assert "insight_text" in d
+        assert d["insight_type"] == "hybrid"
+        assert d["id"] > 0
+
+    def test_generate_insight_no_history_returns_400(self):
+        register(username="no_hist_ins", email="nhi@x.com")
+        token = login("no_hist_ins")["access_token"]
+        r = client.post("/api/v1/ai/insights",
+                        headers={"Authorization": f"Bearer {token}"})
+        assert r.status_code == 400
+
+    def test_generate_insight_requires_auth(self):
+        r = client.post("/api/v1/ai/insights")
+        assert r.status_code == 401
+
+
 
 # ── MCP server — entirely untested ───────────────────────────────────────────
 
