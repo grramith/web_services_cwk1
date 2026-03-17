@@ -11,6 +11,9 @@ from app.middleware import RequestLoggingMiddleware, RateLimitMiddleware
 from app.routes import ai, analytics, auth, catalog, events, feedback, imports, mcp
 from sqlalchemy import text
 from app.database import SessionLocal
+from fastapi.responses import HTMLResponse
+import os
+
 
 API = "/api/v1"
 
@@ -115,10 +118,6 @@ def health_detailed():
 
 @app.get("/", include_in_schema=False)
 def root():
-    return {
-        "name": "Sonic Insights Hybrid API",
-        "version": "3.0.0",
-        "docs": "/docs",
-        "health": "/health",
-        "github": "https://github.com/grramith/web_services_cwk1"
-    }
+    html_path = os.path.join(os.path.dirname(__file__), "static", "landing.html")
+    with open(html_path, "r") as f:
+        return HTMLResponse(f.read())
