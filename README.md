@@ -271,7 +271,7 @@ pytest tests/test_api.py::TestFeedbackCRUD -v
 - **LLM mocking** — `tests/conftest.py` patches `_llm_chat` with an `AsyncMock` returning `None` so no real OpenAI calls are made and tests are fully hermetic
 - **Two test files**:
   - `tests/test_api.py` — original suite covering auth, events CRUD, and core analytics
-  - `tests/test_api.py` — full test suite: auth, feedback CRUD, analytics, catalog, AI hybrid, MCP, end-to-end workflows (121 tests)
+- `tests/test_api_v3_missing.py` — full test suite: auth, feedback CRUD, analytics, catalog, AI hybrid, MCP, end-to-end workflows (121 tests)
 
 ### Coverage summary
 
